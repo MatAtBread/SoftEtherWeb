@@ -1,0 +1,6 @@
+{
+  "vpncmd":"C:\\Program Files\\SoftEther VPN Server\\vpncmd_x64.exe",
+  "host":"192.168.0.3:5555",
+  "adminhub":"VPN",
+  "password":"pk9csx"
+}

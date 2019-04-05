@@ -1,0 +1,15 @@
+{
+  "name": "softetherweb",
+  "version": "1.0.0",
+  "description": "A simple WebUI for SoftEther",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "matatbread",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parse": "^4.3.4",
+    "koa": "^2.7.0"
+  }
+}
