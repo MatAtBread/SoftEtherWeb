@@ -2,7 +2,7 @@ import pojs from './lib/po.js';
 
 const {div, h2, table, tr, td, button, on} = pojs.tag({},"div,h2,table,tr,td,button");
 
-let api = (...args) => fetch('/'+args.join('/')).then(r => r.json())
+let api = (...args) => fetch('/'+args.join('/')).then(r => r.status===200 ? r.json() : r.text().then(info => Promise.reject(r.statusText + "\n" + info)))
 
 const sessionFieldList = [
   "Client IP Address",
