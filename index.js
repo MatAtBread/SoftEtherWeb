@@ -14,7 +14,7 @@ async function vpn(command,params){
 const paths = {
   '/(SessionList)':async (command) => vpn(command),
   '/(SessionGet|SessionDisconnect)/(.*)':async (command,session) => vpn(command,session),
-  '.*':static('./www/',{index:'index.html'})
+  '.*':static('./www',{index:'index.html'})
 };
 
 app.use(async (ctx,next) =>{
@@ -28,7 +28,7 @@ app.use(async (ctx,next) =>{
         let result = await paths[path].call(ctx,...m.slice(1)) ;
         return Object.assign(ctx, result);
       } catch (ex) {
-        return ctx.throw(500, ex.message, {expose: true});
+        return ctx.throw(500, ex ? ex.message : "Error", {expose: true});
       }
     }
   }
