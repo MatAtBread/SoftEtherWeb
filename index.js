@@ -27,7 +27,6 @@ app.use(async (ctx,next) =>{
     let m ;
     if (m = ctx.request.path.match(new RegExp('^'+path+'$'))) {
       try {
-        console.log(m)
         let result = await paths[path].call(ctx,...m.slice(1)) ;
         return Object.assign(ctx, result);
       } catch (ex) {
