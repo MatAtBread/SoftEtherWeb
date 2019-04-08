@@ -3,7 +3,5 @@
     "win32":"C:\\Program Files\\SoftEther VPN Server\\vpncmd_x64.exe",
     "linux":"/usr/local/vpnserver/vpncmd"
   },
-  "host":"192.168.0.3:5555",
-  "adminhub":"VPN",
-  "password":"*******"
+  "port": 8443
 }

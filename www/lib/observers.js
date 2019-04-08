@@ -2,7 +2,7 @@
  * event-delivering thing
  */
 
-import { Observable as ObservableBase } from '../vendor/zen-observable.js';
+import { Observable as ObservableBase } from './zen-observable.js';
 
 export function Observable(){
     ObservableBase.apply(this,arguments) ;

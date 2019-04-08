@@ -1,41 +1,56 @@
 const { promisify, static } = require('./lib/helpers');
 
-const app = new (require('koa'))();
+const body = require('koa-json-body')
+const csv = require('csv-parse/lib/sync');
 
 const config = require('./config.json');
+const vpnCmd = require('./lib/vpncmd');
+const { route, asJson } = require('./lib/router');
+const notConnected = new Error("No server connection established") ;
 
-const vpnCmd = require('./lib/vpncmd')(config);
+const app = new (require('koa'))();
 
-async function vpn(command,params){
-  return {
-    body: JSON.stringify(await vpnCmd(command,params)),
-    type:'application/json'
-  }
-}
+const fmt = {
+  text: x => x.toString(),
+  csv: x => x && csv(x,{
+   columns: true,
+   skip_empty_lines: true
+  })
+} ;
 
-const paths = {
-  '/vpn/([a-zA-Z]+)':async (command) => vpn(command),
-  '/vpn/([a-zA-Z]+)/(.+)':async (command,session) => vpn(command,session),
-  '.*':static('./www',{index:'index.html'})
-};
+let server ;
 
-app.use(async (ctx,next) =>{
-  if (ctx.request.path.indexOf('..')>=0)
-    return ctx.throw(401) ;
+app.use(body({ limit: '32kb', strict: 'false' }));
 
-  for (let path of Object.keys(paths)) {
-    let m ;
-    if (m = ctx.request.path.match(new RegExp('^'+path+'$'))) {
-      try {
-        let result = await paths[path].call(ctx,...m.slice(1)) ;
-        return Object.assign(ctx, result);
-      } catch (ex) {
-        return ctx.throw(500, ex ? ex.message : "Error", {expose: true});
-      }
+app.use(route({
+  async 'vpn/connect'(...args) {
+    if (server) {
+      // TODO: disconnect current service
     }
-  }
+    server = vpnCmd(Object.assign({}, config, this.request.body));
+    return asJson(await server(fmt.csv,'HubList')) ;
+  },
+  'vpn/Hub/([a-zA-Z]+)'(hub) {
+    if (!server)
+      throw notConnected ;
+    return asJson(server(fmt.text,'Hub',hub))
+  },
+  'vpn/([a-zA-Z]+)'(command) {
+    if (!server)
+      throw notConnected ;
+    return asJson(server(fmt.csv,command))
+  },
+  'vpn/([a-zA-Z]+)/(.+)'(command,session) {
+    if (!server)
+      throw notConnected ;
+    return asJson(server(fmt.csv,command,session))
+  },
+  '.*':static('./www',{index:'index.html'})
+})) ;
 
-  return ctx.throw(404) ;
-}) ;
-
-app.listen(8001);
+const https = require('https');
+const fs = require('fs');
+https.createServer({
+  key: fs.readFileSync('certs/server.key'),
+  cert: fs.readFileSync('certs/server.cert')
+},app.callback()).listen(config.port);

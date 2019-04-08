@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "csv-parse": "^4.3.4",
-    "koa": "^2.7.0"
+    "koa": "^2.7.0",
+    "koa-json-body": "^5.3.0"
   }
 }
