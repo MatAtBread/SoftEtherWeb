@@ -68,6 +68,8 @@ const Session = tr.extended({
         Object.keys(this.session).map(k => td(this.session[k])),
         td(
           button({onclick: e => {
+            if (this.onmouseleave)
+              this.onmouseleave();
             this.parentElement.onDisconnect(this.session)
           }},'disconnect'),
           div({id:'more'}))
@@ -156,6 +158,21 @@ const Hub = div.extended({
   }
 });
 
+const HubList = div.extended({
+  constructed(){
+    let list = this;
+    this.append(this.hubs.map(hub => Hub({
+      async onclick() {
+        list.childNodes.forEach(hub => hub.select(false))
+        await api("Hub",hub["Virtual Hub Name"]);
+        this.select(true);
+        list.selected = hub ;
+        list.dispatchEvent(Object.assign(new Event('change'),{hub}));
+      }
+    },hub["Virtual Hub Name"])))
+  }
+})
+
 const SEW = div.extended({
   styles:`
   .Menu {
@@ -179,30 +196,30 @@ const SEW = div.extended({
         span({style:{fontWeight:700}},"SoftEther VPN Status"),
         input({id:'host',placeholder:'VPN Server:5555',value: localStorage.lastVpnHost||''}),
         input({id:'password',placeholder:'password', type:'password'}),
-        button({
+        button({id:'vpnConnected',
           onclick:async e => {
             try {
               e.target.disabled = true ;
               this.ids.host.disabled = true ;
               this.ids.password.disabled = true ;
+              // Connect and return a list of hubs on the server
               let hubs = await apiPost('connect',{
                 "host":this.ids.host.value,
                 "password":this.ids.password.value
               });
               localStorage.lastVpnHost = this.ids.host.value ;
-              this.ids.hubs.replace(div({id:'hubs'}, hubs.map(h => Hub({
-                onclick:async e => {
-                  e.currentTarget.select(true);
-                  this.ids.sessions.replace(div({id:'sessions'}))
-                  await api("Hub",h["Virtual Hub Name"]);
-                  this.ids.sessions.replace(SessionList({id:'sessions'}))
-                }
-              },h["Virtual Hub Name"]))))
+              this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
+            /*
+            this.ids.hubs.replace(HubList({hubs,id:'hubs',onSelect: async (hub) => {
+                this.ids.content.replace(div({id:'content'}))
+                await api("Hub",hub["Virtual Hub Name"]);
+                this.ids.content.replace(SessionList({id:'content'}))
+              }}))*/
             } catch (ex) {
               e.target.disabled = false ;
               this.ids.host.disabled = false ;
               this.ids.password.disabled = false ;
-              this.ids.hubs.replace(div({id:'hubs'}))
+//              this.ids.hubs.replace(div({id:'hubs'}))
               alert(ex.message) ;
             }
             this.ids.password.value = '';
@@ -210,8 +227,18 @@ const SEW = div.extended({
         },"connect"),
         button({ onclick() { window.location.reload() }},'disconnect')
       ),
-      div({id:'hubs'}),
-      div({id:'sessions'})
+      (e)=> on (this.ids.vpnConnected) (
+        e
+        ? [
+            HubList({hubs: e.hubs,id:'hubs'}),
+            (e)=> on (this.ids.hubs) (
+              this.ids.hubs.selected
+              ? SessionList({id:'content'})
+              : div({id:'content'})
+          )
+        ]
+        : div({id:'hubs'})
+      )
     )
   }
 })
