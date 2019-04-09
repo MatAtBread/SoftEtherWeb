@@ -1,7 +1,9 @@
 {
   "vpncmd":{
     "win32":"C:\\Program Files\\SoftEther VPN Server\\vpncmd_x64.exe",
-    "linux":"/usr/local/vpnserver/vpncmd"
+    "linux":"/usr/local/vpnserver/vpncmd",
+    "default":""
   },
-  "port": 8443
+  "port": 8443,
+  "SSLcerts":"certs"
 }

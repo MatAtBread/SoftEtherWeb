@@ -67,14 +67,14 @@ const Session = tr.extended({
       this.append(
         Object.keys(this.session).map(k => td(this.session[k])),
         td(
-          button({onclick: e => {
+          button({onclick: (e)=> {
             if (this.onmouseleave)
               this.onmouseleave();
             this.parentElement.onDisconnect(this.session)
           }},'disconnect'),
           div({id:'more'}))
       );
-      this.onmouseenter = (e) => {
+      this.onmouseenter = (e)=> {
         let info ;
         document.body.append(
           info = SessionInfo({style:{
@@ -86,7 +86,7 @@ const Session = tr.extended({
             top:8+e.pageY+"px",
           },id:'more',sessionID:this.session["Session Name"]})
         )
-        this.onmouseleave = () => { document.body.removeChild(info) ; this.onmouseleave = null }
+        this.onmouseleave = ()=> { document.body.removeChild(info) ; this.onmouseleave = null }
       }
     }
 });
@@ -197,7 +197,7 @@ const SEW = div.extended({
         input({id:'host',placeholder:'VPN Server:5555',value: localStorage.lastVpnHost||''}),
         input({id:'password',placeholder:'password', type:'password'}),
         button({id:'vpnConnected',
-          onclick:async e => {
+          onclick:async (e)=> {
             try {
               e.target.disabled = true ;
               this.ids.host.disabled = true ;
@@ -209,17 +209,10 @@ const SEW = div.extended({
               });
               localStorage.lastVpnHost = this.ids.host.value ;
               this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
-            /*
-            this.ids.hubs.replace(HubList({hubs,id:'hubs',onSelect: async (hub) => {
-                this.ids.content.replace(div({id:'content'}))
-                await api("Hub",hub["Virtual Hub Name"]);
-                this.ids.content.replace(SessionList({id:'content'}))
-              }}))*/
             } catch (ex) {
               e.target.disabled = false ;
               this.ids.host.disabled = false ;
               this.ids.password.disabled = false ;
-//              this.ids.hubs.replace(div({id:'hubs'}))
               alert(ex.message) ;
             }
             this.ids.password.value = '';
@@ -230,14 +223,10 @@ const SEW = div.extended({
       (e)=> on (this.ids.vpnConnected) (
         e
         ? [
-            HubList({hubs: e.hubs,id:'hubs'}),
-            (e)=> on (this.ids.hubs) (
-              this.ids.hubs.selected
-              ? SessionList({id:'content'})
-              : div({id:'content'})
-          )
+            HubList({hubs: e.hubs, id:'hubs'}),
+            (e)=> on (this.ids.hubs) (e ? SessionList() : div())
         ]
-        : div({id:'hubs'})
+        : div()
       )
     )
   }

@@ -51,6 +51,6 @@ app.use(route({
 const https = require('https');
 const fs = require('fs');
 https.createServer({
-  key: fs.readFileSync('certs/server.key'),
-  cert: fs.readFileSync('certs/server.cert')
+  key: fs.readFileSync(config.SSLcerts+'/server.key'),
+  cert: fs.readFileSync(config.SSLcerts+'/server.cert')
 },app.callback()).listen(config.port);
