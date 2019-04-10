@@ -2,6 +2,8 @@ import pojs from './lib/po.js';
 
 const {div, table, tr, td, button, on, input, img, span} = pojs.tag({},"div,table,tr,td,button,input,img,span");
 
+const serverAdmin = {};
+
 async function api(...args) {
   let r = await fetch('/vpn/'+args.join('/')) ;
   if (r.status===200)
@@ -161,7 +163,16 @@ const Hub = div.extended({
 const HubList = div.extended({
   constructed(){
     let list = this;
-    this.append(this.hubs.map(hub => Hub({
+    this.append(Hub({
+        style:{ backgroundColor:'black', color:'yellow'},
+        onclick(){
+          list.childNodes.forEach(hub => hub.select(false))
+          this.select(true);
+          list.selected = serverAdmin ;
+          list.dispatchEvent(Object.assign(new Event('change'),{hub: serverAdmin}));
+        }
+      },span({style:{fontWeight:700}},"Server")),
+      this.hubs.map(hub => Hub({
       async onclick() {
         list.childNodes.forEach(hub => hub.select(false))
         await api("Hub",hub["Virtual Hub Name"]);
@@ -172,6 +183,43 @@ const HubList = div.extended({
     },hub["Virtual Hub Name"])))
   }
 })
+
+const ServerAdmin = table.extended({
+  styles:`
+  .ServerAdmin {
+    width: 100%;
+    border-spacing:0;
+  }
+  .ServerAdmin > tr {
+    vertical-align: top;
+    color: white;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid black;
+    background-color: #333;
+  }
+  `,
+  constructed(){
+    const inputAttrs = { type: 'password', style: {display:'block'}} ;
+    let pw1, pw2;
+    this.append(
+      tr(td("New Admin Password"),td(pw1 = input(inputAttrs)),td(button({
+        style:{width:'100%'},
+        async onclick(){
+          if (pw1.value !== pw2.value || !pw1.value)
+            alert("Passwords do not match or are blank");
+          else {
+            await api("ServerPasswordSet",pw1.value) ;
+            window.location.reload();
+          }
+        }
+      },"set"))),
+      tr(td("Confirm password"),td(pw2 = input(inputAttrs)),td())
+    )
+  },
+  prototype:{
+    className: 'ServerAdmin'
+  }
+});
 
 const SEW = div.extended({
   styles:`
@@ -224,7 +272,7 @@ const SEW = div.extended({
         e
         ? [
             HubList({hubs: e.hubs, id:'hubs'}),
-            (e)=> on (this.ids.hubs) (e ? SessionList() : div())
+            (e)=> on (this.ids.hubs) (this.ids.hubs.selected ? (this.ids.hubs.selected===serverAdmin ? ServerAdmin() : SessionList()) : div())
         ]
         : div()
       )
