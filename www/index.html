@@ -6,6 +6,7 @@
   * {
     font-size: 12px;
     font-family: sans-serif;
+    box-sizing: border-box;
   }
   *:disabled {
     opacity: 0.5;
@@ -16,8 +17,25 @@
     overflow-x:hidden;
     overflow-y:scroll;
     background-color: black;
+    font-size: 12pt;
   }
-  </style>
+  @media only screen and (max-device-width: 480px) {
+    * {
+      font-size: 22pt;
+      font-family: sans-serif;
+    }
+
+    input {
+        font-size: 1.2em;
+        margin: 0.2em;
+    }
+
+    .Menu > input {
+      display: block;
+    }
+  }
+
+</style>
 </head>
 <body>
 </body>

@@ -147,7 +147,7 @@ const Hub = div.extended({
   }
   `,
   constructed(){
-    this.insertAt(this.firstChild, img({src:'softether.png', style:{ width:'80px' }}))
+    this.insertAt(this.firstChild, img({src:'softether.png', style:{ width:'5em' }}))
   },
   prototype:{
     className:'Hub',
@@ -226,8 +226,9 @@ const SEW = div.extended({
   .Menu {
     top:0;
     width:100%;
-    height:2em;
+    min-height:2em;
     line-height:2em;
+    padding: 0.5em;
     background:#333;
     color:white;
   }
@@ -241,13 +242,13 @@ const SEW = div.extended({
   async constructed() {
     this.append(
       div({ className: 'Menu'},
-        span({style:{fontWeight:700}},"SoftEther VPN Status"),
+        span({style:{fontWeight:700}},"SoftEther VPN Status "),
         input({id:'host',placeholder:'VPN Server:5555',value: localStorage.lastVpnHost||''}),
         input({id:'password',placeholder:'password', type:'password'}),
         button({id:'vpnConnected',
           onclick:async (e)=> {
             try {
-              e.target.disabled = true ;
+              this.ids.vpnConnected.disabled = true ;
               this.ids.host.disabled = true ;
               this.ids.password.disabled = true ;
               // Connect and return a list of hubs on the server
@@ -258,7 +259,7 @@ const SEW = div.extended({
               localStorage.lastVpnHost = this.ids.host.value ;
               this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
             } catch (ex) {
-              e.target.disabled = false ;
+              this.ids.vpnConnected.disabled = false ;
               this.ids.host.disabled = false ;
               this.ids.password.disabled = false ;
               alert(ex.message) ;
@@ -266,7 +267,7 @@ const SEW = div.extended({
             this.ids.password.value = '';
           }
         },"connect"),
-        button({ onclick() { window.location.reload() }},'disconnect')
+        button({ onclick() { navigator.sendBeacon('/vpn/close'); window.location.reload() }},'disconnect')
       ),
       (e)=> on (this.ids.vpnConnected) (
         e
@@ -277,7 +278,24 @@ const SEW = div.extended({
         : div()
       )
     )
+
+    if ((await api('isConnected')).connected) {
+      try {
+        this.ids.vpnConnected.disabled = true ;
+        this.ids.host.disabled = true ;
+        this.ids.password.disabled = true ;
+        let hubs = await api("HubList") ;
+        this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
+      } catch (ex) {
+        this.ids.vpnConnected.disabled = false ;
+        this.ids.host.disabled = false ;
+        this.ids.password.disabled = false ;
+        alert(ex.message) ;
+      }
+      this.ids.password.value = '';
+    }
   }
 })
 
 window.onload = function() { document.body.appendChild(SEW()) }
+window.api = api ;

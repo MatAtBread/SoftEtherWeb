@@ -15,35 +15,54 @@ const fmt = {
   csv: x => x && csv(x,{
    columns: true,
    skip_empty_lines: true
-  })
+ })
 } ;
 
-let server ;
+let server = {};
 
 app.use(body({ limit: '32kb', strict: 'false' }));
 
 app.use(route({
-  async 'vpn/connect'(...args) {
-    if (server) {
-      // TODO: disconnect current service
+  async 'vpn/isConnected'() {
+    let id = this.cookies.get("sevpn") ;
+    return asJson({connected:!!server[id]});
+  },
+  async 'vpn/close'() {
+    let id = this.cookies.get("sevpn") ;
+    if (server[id]) {
+      server[id].close() ;
+      delete server[id] ;
     }
-    server = vpnCmd(Object.assign({}, config, this.request.body));
-    return asJson(await server(fmt.csv,'HubList')) ;
+    this.cookies.set("sevpn",'',{ expires: new Date('1980-01-01'), secure: true, overwrite: true}) ;
+    return asJson({ok:1}) ;
+  },
+  async 'vpn/connect'() {
+    let id = this.cookies.get("sevpn") ;
+    if (server[id]) {
+      server[id].close() ;
+    }
+    id = Date.now().toString(36)+(Math.random()).toString(36);
+    this.cookies.set("sevpn",id,{ secure: true, httpOnly: true, overwrite: true}) ;
+    server[id] = vpnCmd(Object.assign({}, config, this.request.body));
+    return asJson(await server[id](fmt.csv,'HubList')) ;
   },
   'vpn/Hub/([a-zA-Z]+)'(hub) {
-    if (!server)
+    let vpn = server[this.cookies.get("sevpn")];
+    if (!vpn)
       throw notConnected ;
-    return asJson(server(fmt.text,'Hub',hub))
+    return asJson(vpn(fmt.text,'Hub',hub))
   },
   'vpn/([a-zA-Z]+)'(command) {
-    if (!server)
+    let vpn = server[this.cookies.get("sevpn")];
+    if (!vpn)
       throw notConnected ;
-    return asJson(server(fmt.csv,command))
+    return asJson(vpn(fmt.csv,command))
   },
   'vpn/([a-zA-Z]+)/(.+)'(command,session) {
-    if (!server)
+    let vpn = server[this.cookies.get("sevpn")];
+    if (!vpn)
       throw notConnected ;
-    return asJson(server(fmt.csv,command,session))
+    return asJson(vpn(fmt.csv,command,session))
   },
   '.*':static('./www',{index:'index.html'})
 })) ;
