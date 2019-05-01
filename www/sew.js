@@ -169,7 +169,7 @@ const HubList = div.extended({
           list.childNodes.forEach(hub => hub.select(false))
           this.select(true);
           list.selected = serverAdmin ;
-          list.dispatchEvent(Object.assign(new Event('change'),{hub: serverAdmin}));
+          list.dispatchEvent(new Event('change')) ;
         }
       },span({style:{fontWeight:700}},"Server")),
       this.hubs.map(hub => Hub({
@@ -178,7 +178,7 @@ const HubList = div.extended({
         await api("Hub",hub["Virtual Hub Name"]);
         this.select(true);
         list.selected = hub ;
-        list.dispatchEvent(Object.assign(new Event('change'),{hub}));
+        list.dispatchEvent(new Event('change')) ;
       }
     },hub["Virtual Hub Name"])))
   }
