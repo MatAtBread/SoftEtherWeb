@@ -29,7 +29,7 @@ export default function connectVpn(config: ConnectVpnOptions){
       command = deferred() ;
       vpn = spawn(executable,[
         "/server",config.host,
-        "/password:"+config.password,
+        "'/password:"+config.password+"'",
         '/csv'
       ],{
         windowsHide: true
