@@ -27,11 +27,11 @@ export default function connectVpn(config: ConnectVpnOptions){
         command.reject("Aborted") ;
 
       command = deferred() ;
-      console.log("spawn",executable,
+      /*console.log("spawn",executable,
         "/server",config.host,
         "/password:"+config.password,
         '/csv'
-      );
+      );*/
       vpn = spawn(executable,[
         "/server",config.host,
         "/password:"+config.password,
@@ -39,12 +39,12 @@ export default function connectVpn(config: ConnectVpnOptions){
       ],{
         windowsHide: true
       });
-      console.log('vpncmd',vpn);
+      //console.log('vpncmd',vpn);
 
-      vpn.on('exit', code => { vpn = null ; console.log('vpncmd exit'); }) ;
+      vpn.on('exit', code => { vpn = null ; /*console.log('vpncmd exit');*/ }) ;
       vpn.stderr.on('data', data => console.warn('vpn-stderr',data))
       vpn.stdout.on('data', data => {
-        console.log("stdout",data.toString());
+        //console.log("stdout",data.toString());
         out += data.toString() ;
         if (out.match(errorResponse)) {
           command.reject(new Error(out)) ;
@@ -70,14 +70,14 @@ export default function connectVpn(config: ConnectVpnOptions){
       command = deferred() ;
       command.cmd = cmd.join(" ")+"\n";
       command.formatter = formatter;
-      console.log("stdin",command.cmd)
+      //console.log("stdin",command.cmd)
       vpn.stdin.write(command.cmd);
       return command ;
     }) ;
   }
 
   vpnCmd.close = function close(){
-    console.log("stdin",'\n\nexit\n\n');
+    //console.log("stdin",'\n\nexit\n\n');
     vpn.stdin.write('\n\nexit\n\n');
   }
 
