@@ -6,6 +6,7 @@
         "noImplicitThis": true,
         "noImplicitReturns": true,
         "esModuleInterop": true,
-        "noEmit": true
+        "noEmit": true,
+        "target": "ES2020"
     }
 }

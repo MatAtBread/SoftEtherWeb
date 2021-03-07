@@ -8,7 +8,7 @@ export interface ConnectVpnOptions {
     }
   }
   
-export  type Formatter<T = any> = (x:T) => string | unknown;
+export  type Formatter = (x:string) => string | unknown;
 
 export interface ServerOptions {
     SSLcerts: string;

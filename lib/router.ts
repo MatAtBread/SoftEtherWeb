@@ -16,6 +16,8 @@ function route(paths: RoutePaths){
           const result = await paths[path](ctx,...m.slice(1)) ;
           return Object.assign(ctx, result);
         } catch (ex) {
+          if (ex.code === 'ENOENT')
+            return ctx.throw(404, "Not found", {expose: true});
           return ctx.throw(500, ex ? ex.message : "Error", {expose: true});
         }
       }

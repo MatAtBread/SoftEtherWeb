@@ -51,7 +51,7 @@ export default function connectVpn(config: ConnectVpnOptions){
     	      result = result.slice(command.cmd.length) ;
           out = out.slice(found.index+found[0].length)
           try {
-            command.resolve(command?.formatter(result)) ;
+            command.resolve(command.formatter && command.formatter(result)) ;
           } catch(ex) {
             command.reject(ex) ;
           }

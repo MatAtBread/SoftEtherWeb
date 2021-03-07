@@ -11,7 +11,7 @@ export function statics(path: string, {index}:{index?:string} = {}){
       target += "/"+index ;
     return {
       body: await fs.readFile(target),
-      type: lookup(ctx.request.path) || "application/octet-stream"
+      type: lookup(ctx.request.path) || "text/html"
     }
   }
 }
