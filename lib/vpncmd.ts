@@ -27,6 +27,11 @@ export default function connectVpn(config: ConnectVpnOptions){
         command.reject("Aborted") ;
 
       command = deferred() ;
+      console.log("spawn",executable,
+        "/server",config.host,
+        "/password:"+config.password,
+        '/csv'
+      );
       vpn = spawn(executable,[
         "/server",config.host,
         "/password:"+config.password,
