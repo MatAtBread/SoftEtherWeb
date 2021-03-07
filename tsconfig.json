@@ -1,0 +1,12 @@
+{
+    "include": ["./index.ts"],
+    "compilerOptions": {
+        "lib": ["es2020"],
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noImplicitReturns": true,
+        "esModuleInterop": true,
+        "noEmit": true,
+        "target": "ES2020"
+    }
+}

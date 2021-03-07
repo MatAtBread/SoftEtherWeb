@@ -244,7 +244,7 @@ const SEW = div.extended({
       div({ className: 'Menu'},
         span({style:{fontWeight:700}},"SoftEther VPN Status "),
         input({id:'host',placeholder:'VPN Server:5555',value: localStorage.lastVpnHost||''}),
-        input({id:'password',placeholder:'password', type:'password'}),
+        input({id:'password',placeholder:'password', type:'password', value: localStorage.lastGoodPassword||''}),
         button({id:'vpnConnected',
           onclick:async (e)=> {
             try {
@@ -258,6 +258,9 @@ const SEW = div.extended({
               });
               localStorage.lastVpnHost = this.ids.host.value ;
               this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
+              if (confirm("Save the password as a local default [unencrypted browser storage]?")) {
+                localStorage.lastGoodPassword = this.ids.password.value;
+              }
             } catch (ex) {
               this.ids.vpnConnected.disabled = false ;
               this.ids.host.disabled = false ;
