@@ -29,7 +29,7 @@ export default function connectVpn(config: ConnectVpnOptions){
       command = deferred() ;
       vpn = spawn(executable,[
         "/server",config.host,
-        "'/password:"+config.password+"'",
+        "/password:"+config.password,
         '/csv'
       ],{
         windowsHide: true
@@ -38,6 +38,7 @@ export default function connectVpn(config: ConnectVpnOptions){
       vpn.on('exit', code => vpn = null) ;
       vpn.stderr.on('data', data => console.warn('vpn-stderr',data))
       vpn.stdout.on('data', data => {
+        console.log("stout",data.toString());
         out += data.toString() ;
         if (out.match(errorResponse)) {
           command.reject(new Error(out)) ;
@@ -63,6 +64,7 @@ export default function connectVpn(config: ConnectVpnOptions){
       command = deferred() ;
       command.cmd = cmd.join(" ")+"\n";
       command.formatter = formatter;
+      console.log("stdin",command.cmd)
       vpn.stdin.write(command.cmd);
       return command ;
     }) ;
