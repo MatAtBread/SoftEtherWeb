@@ -3,46 +3,35 @@ import pojs from './lib/po.js';
 const {div, table, tr, td, button, on, input, img, span} = pojs.tag({},"div,table,tr,td,button,input,img,span");
 
 const serverAdmin = {};
+const connection = {};
 
-async function api(...args) {
-  let r = await fetch('/vpn/'+args.join('/')) ;
-  if (r.status===200)
-    return r.json() ;
-  throw new Error(await r.text()+"\n("+r.status+': '+r.statusText+')') ;
+const api = new Proxy({}, {
+  get(target, cmd, receiver) {
+    return async (params = {}) => {
+      const r = await fetch(connection.host, {
+        method: 'POST',
+        headers: {
+          //'X-VPNADMIN-HUBNAME',
+          'X-VPNADMIN-PASSWORD': connection.password
+        },
+        body: JSON.stringify({
+          "jsonrpc": "2.0",
+          "id": "rpc_call_id",
+          "method": cmd,
+          "params": params
+        })
+      });
+      if (r.status === 200)
+        return r.json().then(r => r.result);
+      throw new Error(await r.text() + "\n(" + r.status + ': ' + r.statusText + ')');
+    }
+  }
+});
+window.api = api ;
+
+function value(v) {
+  return typeof v==='boolean' ? (v ? '\u2714' : '\u2716') : v
 }
-
-async function apiPost(cmd,data) {
-  let r = await fetch('/vpn/'+cmd,{
-    method:'POST',
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data)
-  }) ;
-  if (r.status===200)
-    return r.json() ;
-  throw new Error(await r.text()+"\n("+r.status+': '+r.statusText+')') ;
-}
-
-const sessionFieldList = [
-  "Client IP Address",
-  "Client Host Name",
-  "Client Port",
-  "User Name",
-  "Server Port",
-  "Connection Started",
-  "Session has been Established",
-  "Number of TCP Connections",
-  "Maximum Number of TCP Connections",
-  "Physical Underlay Protocol",
-  "Outgoing Data Size",
-  "Incoming Data Size",
-  "Client Product Name",
-  "Client Version",
-  "Client OS Name",
-  "Client OS Version",
-  "Client OS Product ID"
-];
 
 const Header = tr.extended({
     constructed(){
@@ -59,15 +48,15 @@ const Header = tr.extended({
 
 const SessionInfo = table.extended({
   async constructed(){
-    const fieldList = "Client Host Name (Reported),Client IP Address (Reported)";
-    let info = await api("SessionGet",this.sessionID);
-    this.append(sessionFieldList.map(field => info.filter(i => i.Item.indexOf(field)>=0).map(({Item,Value}) => tr(td(Item),td(Value)))))
+    const info = this.info;
+    this.append(Object.entries(this.info).filter(([k,v]) => k.indexOf(':')<0).map(([k,v]) => tr(td(k.split('_')[0]),td(value(v))))) ;
   }
 })
+
 const Session = tr.extended({
     constructed(x) {
       this.append(
-        Object.keys(this.session).map(k => td(this.session[k])),
+        Object.keys(this.session).map(k => td(value(this.session[k]))),
         td(
           button({onclick: (e)=> {
             if (this.onmouseleave)
@@ -76,7 +65,7 @@ const Session = tr.extended({
           }},'disconnect'),
           div({id:'more'}))
       );
-      this.onmouseenter = (e)=> {
+      this.onmouseenter = async (e)=> {
         let info ;
         document.body.append(
           info = SessionInfo({style:{
@@ -86,8 +75,13 @@ const Session = tr.extended({
             position:'absolute',
             left:8+e.pageX+"px",
             top:8+e.pageY+"px",
-          },id:'more',sessionID:this.session["Session Name"]})
-        )
+          },
+          id:'more',
+          info: await api.GetSessionStatus({
+            HubName_str: this.hub,
+            Name_str: this.session.Name_str
+          }) 
+        }));
         this.onmouseleave = ()=> { document.body.removeChild(info) ; this.onmouseleave = null }
       }
     }
@@ -119,12 +113,15 @@ const SessionList = table.extended({
   prototype:{
     className:'SessionList',
     async populate(){
-      let sessions = await api("SessionList") ;
-      this.append(Header(Object.keys(sessions[0]),''), sessions.map(session => Session({ session })))
+      const { SessionList } = await api.EnumSession({ HubName_str: this.hub}) ;
+      this.append(Header(Object.keys(SessionList[0]).map(k => k.split('_')[0]),''), SessionList.map(session => Session({ session, hub: this.hub })))
     },
     async onDisconnect(session){
       this.remove(this.children);
-      await api("SessionDisconnect",session["Session Name"]);
+      await api.DeleteSession({
+        HubName_str: this.hub,
+        Name_str: session.Name_str
+      }) ; 
       await this.populate() ;
     }
   }
@@ -175,12 +172,11 @@ const HubList = div.extended({
       this.hubs.map(hub => Hub({
       async onclick() {
         list.childNodes.forEach(hub => hub.select(false))
-        await api("Hub",hub["Virtual Hub Name"]);
         this.select(true);
         list.selected = hub ;
         list.dispatchEvent(new Event('change')) ;
       }
-    },hub["Virtual Hub Name"])))
+    },hub.HubName_str)))
   }
 })
 
@@ -208,7 +204,7 @@ const ServerAdmin = table.extended({
           if (pw1.value !== pw2.value || !pw1.value)
             alert("Passwords do not match or are blank");
           else {
-            await api("ServerPasswordSet",pw1.value) ;
+            await api.SetServerPassword({ PlainTextPassword_str: pw1.value }) ;
             window.location.reload();
           }
         }
@@ -251,16 +247,20 @@ const SEW = div.extended({
               this.ids.vpnConnected.disabled = true ;
               this.ids.host.disabled = true ;
               this.ids.password.disabled = true ;
+
               // Connect and return a list of hubs on the server
-              let hubs = await apiPost('connect',{
-                "host":this.ids.host.value,
-                "password":this.ids.password.value
-              });
+              connection.host = "https://"+this.ids.host.value+"/api/";
+              connection.password = this.ids.password.value;
+
+              let hubs = await api.EnumHub();
               localStorage.lastVpnHost = this.ids.host.value ;
-              this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
+              this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs: hubs.HubList}));
               if (confirm("Save the password as a local default [unencrypted browser storage]?")) {
                 localStorage.lastGoodPassword = this.ids.password.value;
+              } else {
+                delete this.ids.password.value;
               }
+              this.ids.disconnect.disabled = false ;
             } catch (ex) {
               this.ids.vpnConnected.disabled = false ;
               this.ids.host.disabled = false ;
@@ -270,24 +270,24 @@ const SEW = div.extended({
             this.ids.password.value = '';
           }
         },"connect"),
-        button({ onclick() { navigator.sendBeacon('/vpn/close'); window.location.reload() }},'disconnect')
+        button({ id: 'disconnect', disabled: true, async onclick() { delete localStorage.lastGoodPassword; window.location.reload() }},'log out')
       ),
       (e)=> on (this.ids.vpnConnected) (
         e
         ? [
             HubList({hubs: e.hubs, id:'hubs'}),
-            (e)=> on (this.ids.hubs) (this.ids.hubs.selected ? (this.ids.hubs.selected===serverAdmin ? ServerAdmin() : SessionList()) : div())
+            (e)=> on (this.ids.hubs) (this.ids.hubs.selected ? (this.ids.hubs.selected===serverAdmin ? ServerAdmin() : SessionList({ hub: this.ids.hubs.selected.HubName_str })) : div())
         ]
         : div()
       )
     )
 
-    if ((await api('isConnected')).connected) {
+    /*if ((await apiPost('isConnected')).connected) {
       try {
         this.ids.vpnConnected.disabled = true ;
         this.ids.host.disabled = true ;
         this.ids.password.disabled = true ;
-        let hubs = await api("HubList") ;
+        let hubs = await apiPost("HubList") ;
         this.ids.vpnConnected.dispatchEvent(Object.assign(new Event('change'),{hubs}));
       } catch (ex) {
         this.ids.vpnConnected.disabled = false ;
@@ -296,9 +296,8 @@ const SEW = div.extended({
         alert(ex.message) ;
       }
       this.ids.password.value = '';
-    }
+    }*/
   }
 })
 
 window.onload = function() { document.body.appendChild(SEW()) }
-window.api = api ;
